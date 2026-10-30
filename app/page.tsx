@@ -6,6 +6,7 @@ import AircraftPhoto from "../components/aircraft-photo";
 import BrandMark from "../components/brand-mark";
 import SkyIllustration from "../components/sky-illustration";
 import PositionMap from "../components/position-map";
+import { ArrowIcon, ExpandIcon } from "../components/ui-icons";
 import { locationOverride } from "../lib/location-override";
 import { locationPermission, requestLocation } from "../lib/location";
 import { distanceKm, type Aircraft } from "../lib/aircraft";
@@ -322,7 +323,7 @@ export default function Home() {
         target="_blank"
         rel="noreferrer"
       >
-        Data: adsb.lol ↗
+        Data: adsb.lol <ArrowIcon />
       </a>
     </footer>
   );
@@ -370,7 +371,10 @@ export default function Home() {
             </p>
             <div className="gate-action">
               <button className="primary" onClick={locate}>
-                Enable location<span>↗</span>
+                Enable location
+                <span>
+                  <ArrowIcon />
+                </span>
               </button>
               <p className="gate-helper" role="status">
                 {error}
@@ -425,15 +429,21 @@ export default function Home() {
                 <FlightNumber
                   callsign={visible.callsign}
                   registration={visible.registration}
+                  kind={visible.kind}
                 />
                 <div className="aircraft-model">
-                  {visible
-                    ? aircraftNames[visible.type || ""] ||
-                      visible.type ||
-                      "Unknown aircraft type"
-                    : busy
-                      ? "Checking your local airspace…"
-                      : `Searching within ${radius} km`}
+                  <span>
+                    {visible.kind === "rotorcraft"
+                      ? "Rotorcraft"
+                      : visible.kind === "plane"
+                        ? "Plane"
+                        : ""}
+                    {visible.type
+                      ? `${visible.kind !== "unknown" ? " · " : ""}${aircraftNames[visible.type] || visible.type}`
+                      : visible.kind === "unknown"
+                        ? "Unknown aircraft type"
+                        : ""}
+                  </span>
                   {visible && (
                     <span className="radio-callsign">
                       Callsign {visible.callsign}
@@ -448,7 +458,7 @@ export default function Home() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Live map on Flightradar24 ↗
+                      Live map on Flightradar24 <ArrowIcon />
                     </a>
                     <AircraftPhoto
                       hex={visible.hex}
@@ -565,7 +575,10 @@ export default function Home() {
                 disabled={busy}
                 onClick={() => setRadius(nextRadius!)}
               >
-                Look within {nextRadius} km <span aria-hidden="true">↗</span>
+                Look within {nextRadius} km{" "}
+                <span aria-hidden="true">
+                  <ArrowIcon />
+                </span>
               </button>
             )}
           </div>
@@ -609,20 +622,41 @@ export default function Home() {
         <div className="settings-right">
           {isOverride && (
             <button className="text-button" onClick={locate}>
-              Use my location ↗
+              Use my location <ArrowIcon />
             </button>
           )}
           <button className="text-button" onClick={toggleFullscreen}>
-            {fullscreen ? "Exit full screen" : "Full screen"} ⛶
+            {fullscreen ? "Exit full screen" : "Full screen"}{" "}
+            <ExpandIcon expanded={fullscreen} />
           </button>
         </div>
       </div>
       <div className="data-footer">
-        <details className="data-note">
-          <summary>
-            About this flight data <span>+</span>
+        <details
+          className="data-note"
+          onToggle={(event) => {
+            const details = event.currentTarget;
+            if (!details.open) return;
+            requestAnimationFrame(() => {
+              if (!details.open || !details.isConnected) return;
+              const bounds = details.getBoundingClientRect();
+              if (bounds.bottom > window.innerHeight || bounds.top < 0) {
+                details.scrollIntoView({
+                  block: "start",
+                  behavior: window.matchMedia(
+                    "(prefers-reduced-motion: reduce)",
+                  ).matches
+                    ? "instant"
+                    : "smooth",
+                });
+              }
+            });
+          }}
+        >
+          <summary aria-controls="flight-data-content">
+            About this flight data <span aria-hidden="true">+</span>
           </summary>
-          <p>
+          <p id="flight-data-content">
             We select the airborne aircraft with the shortest ground distance
             from you. Nearby doesn’t always mean directly overhead. Reports
             older than 30 seconds and grounded aircraft are excluded. Coverage

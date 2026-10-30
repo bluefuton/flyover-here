@@ -1,3 +1,11 @@
+export type AircraftKind = "plane" | "rotorcraft" | "unknown";
+
+export function aircraftKind(category: unknown): AircraftKind {
+  if (category === "A7") return "rotorcraft";
+  if (typeof category === "string" && /^A[1-6]$/.test(category)) return "plane";
+  return "unknown";
+}
+
 export type Aircraft = {
   hex: string;
   latitude: number;
@@ -5,6 +13,7 @@ export type Aircraft = {
   callsign: string;
   registration: string | null;
   type: string | null;
+  kind: AircraftKind;
   altitude: number;
   speed: number | null;
   track: number | null;
@@ -49,6 +58,7 @@ export function nearestAircraft(
         callsign: String(a.flight || a.r || a.hex).trim(),
         registration: a.r || null,
         type: a.t || null,
+        kind: aircraftKind(a.category),
         altitude: a.alt_baro,
         speed: typeof a.gs === "number" ? a.gs : null,
         track: typeof a.track === "number" ? a.track : null,

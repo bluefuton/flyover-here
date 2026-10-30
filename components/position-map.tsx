@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Aircraft } from "../lib/aircraft";
 import { mapLayout } from "../lib/map";
+import AircraftSymbol from "./aircraft-symbol";
+import { ArrowIcon } from "./ui-icons";
 export default function PositionMap({
   position,
   aircraft,
@@ -121,24 +123,18 @@ export default function PositionMap({
                 className="aircraft-marker"
                 style={{ left: plane.x, top: plane.y }}
               >
-                <svg
-                  viewBox="0 0 40 40"
-                  style={{ transform: `rotate(${aircraft.track ?? 0}deg)` }}
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M20 3l3 12 12 8v4l-12-4v9l4 3v2l-7-2-7 2v-2l4-3v-9L5 27v-4l12-8z"
-                    fill="currentColor"
-                    stroke="white"
-                    strokeWidth="1"
-                  />
-                </svg>
+                <AircraftSymbol
+                  kind={aircraft.kind}
+                  heading={aircraft.track ?? 0}
+                />
                 <b>{aircraft.callsign}</b>
               </div>
             )}
           </>
         )}
-        <span className="map-north">N ↑</span>
+        <span className="map-north">
+          N <ArrowIcon direction="up" />
+        </span>
         {tileError && <span className="map-error">Map tiles unavailable</span>}
         <a
           className="map-attribution"

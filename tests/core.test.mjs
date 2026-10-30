@@ -18,7 +18,7 @@ async function moduleUrl(path, imports = {}) {
   return `data:text/javascript;base64,${Buffer.from(js).toString("base64")}`;
 }
 const aircraftUrl = await moduleUrl("../lib/aircraft.ts");
-const { nearestAircraft, distanceKm } = await import(aircraftUrl);
+const { nearestAircraft, distanceKm, aircraftKind } = await import(aircraftUrl);
 const { mapLayout, project } = await import(await moduleUrl("../lib/map.ts"));
 const { locationOverride } = await import(
   await moduleUrl("../lib/location-override.ts")
@@ -173,7 +173,7 @@ test("feed handler shares requests, ages cached positions and identifies provide
   }
 });
 
-test("flight metadata retains operator names without inventing passenger flight numbers", async () => {
+test("flight metadata requires an exact callsign record and does not invent flight numbers", async () => {
   const routeUrl = await moduleUrl("../app/api/flight-number/route.ts");
   const realFetch = globalThis.fetch;
   try {
@@ -183,7 +183,7 @@ test("flight metadata retains operator names without inventing passenger flight 
         return Response.json({
           response: [{ icao: "SHT", name: "British Airways Shuttle" }],
         });
-      if (callsign === "SHT8R")
+      if (["SHT8R", "CFL06"].includes(callsign))
         return Response.json({ response: "unknown callsign" }, { status: 404 });
       const examples = {
         JAL42: ["JL42", "Japan Airlines"],
@@ -206,7 +206,6 @@ test("flight metadata retains operator names without inventing passenger flight 
       ["JAL42", "JL42", "Japan Airlines"],
       ["BAW396U", null, "British Airways"],
       ["VKG576", null, "SunClass Airlines"],
-      ["SHT8R", null, "British Airways Shuttle"],
     ]) {
       const result = await (
         await GET(
@@ -216,6 +215,16 @@ test("flight metadata retains operator names without inventing passenger flight 
         )
       ).json();
       assert.deepEqual(result.flight, { number, airline });
+    }
+    for (const callsign of ["SHT8R"]) {
+      const result = await (
+        await GET(
+          new Request(
+            `http://localhost/api/flight-number?callsign=${callsign}`,
+          ),
+        )
+      ).json();
+      assert.equal(result.flight, null);
     }
   } finally {
     globalThis.fetch = realFetch;
@@ -324,4 +333,61 @@ test("location failures distinguish denial, missing APIs, and synchronous WebVie
     fail,
   );
   assert.deepEqual(failures, ["unsupported", "unavailable", "denied"]);
+});
+
+test("CFL06 cannot inherit Swedish Airlines from its three-letter prefix", async () => {
+  const realFetch = globalThis.fetch;
+  const requests = [];
+  try {
+    globalThis.fetch = async (url) => {
+      requests.push(String(url));
+      if (String(url).includes("/airline/CFL"))
+        return Response.json({
+          response: [{ icao: "CFL", name: "Swedish Airlines" }],
+        });
+      return Response.json({ response: "unknown callsign" }, { status: 404 });
+    };
+    const { GET } = await import(
+      await moduleUrl("../app/api/flight-number/route.ts")
+    );
+    const response = await GET(
+      new Request("http://localhost/api/flight-number?callsign=CFL06"),
+    );
+    assert.deepEqual(await response.json(), { flight: null });
+    assert.deepEqual(requests, ["https://api.adsbdb.com/v0/callsign/CFL06"]);
+    globalThis.fetch = async () => {
+      throw new Error("timeout");
+    };
+    const unavailable = await GET(
+      new Request("http://localhost/api/flight-number?callsign=CFL07"),
+    );
+    assert.deepEqual(await unavailable.json(), { flight: null });
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("reported emitter categories distinguish rotorcraft and planes without guessing unknowns", () => {
+  assert.equal(aircraftKind("A7"), "rotorcraft");
+  for (const category of ["A1", "A2", "A3", "A4", "A5", "A6"])
+    assert.equal(aircraftKind(category), "plane");
+  for (const category of [undefined, null, "A0", "B1", "B2", "C1", "A8", 7])
+    assert.equal(aircraftKind(category), "unknown");
+  const cfl06 = nearestAircraft(
+    [
+      {
+        hex: "c83353",
+        flight: "CFL06   ",
+        category: "A7",
+        alt_baro: 450,
+        lat: -40.338821,
+        lon: 175.63147,
+        seen_pos: 0.337,
+      },
+    ],
+    -40.34,
+    175.63,
+  );
+  assert.equal(cfl06.kind, "rotorcraft");
+  assert.equal(cfl06.callsign, "CFL06");
 });

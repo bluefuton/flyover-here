@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
+import { ArrowIcon, ExpandIcon } from "./ui-icons";
 type Photo = { src: string; link: string; photographer: string };
 export default function AircraftPhoto({
   hex,
@@ -46,7 +47,7 @@ export default function AircraftPhoto({
           dialog.current?.showModal();
         }}
       >
-        See aircraft photo <span aria-hidden="true">⤢</span>
+        See aircraft photo <ExpandIcon />
       </button>
       <dialog
         ref={dialog}
@@ -105,7 +106,7 @@ export default function AircraftPhoto({
           )}
           <div className="lightbox-caption">
             <a href={photo.link} target="_blank" rel="noreferrer">
-              © {photo.photographer} / Planespotters.net ↗
+              © {photo.photographer} / Planespotters.net <ArrowIcon />
             </a>
             <p>Photo may show an earlier livery.</p>
           </div>

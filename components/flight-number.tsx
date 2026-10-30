@@ -1,18 +1,22 @@
 "use client";
 import { useEffect, useState } from "react";
+import type { AircraftKind } from "../lib/aircraft";
 type Flight = { number: string | null; airline: string | null };
 export default function FlightIdentity({
   callsign,
   registration,
+  kind,
 }: {
   callsign: string;
   registration: string | null;
+  kind: AircraftKind;
 }) {
   const [result, setResult] = useState<{
     callsign: string;
     flight: Flight | null;
   } | null>(null);
   useEffect(() => {
+    if (kind === "rotorcraft") return;
     const controller = new AbortController();
     fetch(`/api/flight-number?callsign=${encodeURIComponent(callsign)}`, {
       signal: controller.signal,
@@ -30,8 +34,11 @@ export default function FlightIdentity({
         if (!controller.signal.aborted) setResult({ callsign, flight: null });
       });
     return () => controller.abort();
-  }, [callsign]);
-  const flight = result?.callsign === callsign ? result.flight : null;
+  }, [callsign, kind]);
+  const flight =
+    kind !== "rotorcraft" && result?.callsign === callsign
+      ? result.flight
+      : null;
   return (
     <>
       <span className="board-label">
