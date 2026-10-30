@@ -85,6 +85,39 @@ npm run build      # Build the app and Worker
 npm start          # Preview the built Worker locally; does not deploy
 ```
 
-The project retains its Sites/Cloudflare scaffolding. `.openai/hosting.json` contains hosting metadata; it is not needed to obtain flight API credentials. No production deployment or GitHub deployment workflow is triggered by these commands.
+The project retains its Sites/Cloudflare scaffolding. `.openai/hosting.json` contains hosting metadata; it is not needed to obtain flight API credentials. The local development and validation commands above do not deploy.
 
 Source code lives in `app/`, `components/`, and `lib/`. Tests live in `tests/`; screenshots live in `docs/`. Generated builds, local runtime state, dependencies, and `.env` files are ignored by Git.
+
+## Deploy to Cloudflare Workers
+
+Like [bluefuton-com](https://github.com/bluefuton/bluefuton-com), this repository uses a tracked `wrangler.jsonc` and enables branch/PR previews. Flyover Here also needs a Worker for its live-data routes, so it cannot be deployed as a static Pages export.
+
+### Connect the GitHub repository
+
+In Cloudflare **Workers & Pages**, create a Worker and import **bluefuton/flyover-here** from GitHub. Use these build settings:
+
+| Setting | Value |
+| --- | --- |
+| Worker name | `flyover-here` |
+| Production branch | `main` |
+| Root directory | Repository root (`/`) |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy --config dist/server/wrangler.json` |
+| Non-production deploy command | `npx wrangler preview --config dist/server/wrangler.json` |
+| Build variable | `NODE_VERSION=22` |
+
+Enable non-production branch builds if you want preview deployments. No application secrets, database bindings, or API keys are required. After the first deployment, add a custom domain under the Worker's **Settings → Domains & Routes**.
+
+The Cloudflare Vite plugin builds the server and browser assets together and emits `dist/server/wrangler.json`. Deploy that generated configuration; uploading only `dist/client` would omit the API routes.
+
+### Deploy from your terminal
+
+Sign in to your own Cloudflare account and deploy:
+
+```sh
+npx wrangler login
+npm run deploy
+```
+
+For a non-production preview, use `npm run deploy:preview`. To validate the deployment bundle without publishing anything, use `npm run deploy -- --dry-run`.
