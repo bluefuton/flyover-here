@@ -221,3 +221,107 @@ test("flight metadata retains operator names without inventing passenger flight 
     globalThis.fetch = realFetch;
   }
 });
+
+const { locationPermission, requestLocation } = await import(
+  await moduleUrl("../lib/location.ts")
+);
+
+test("permission discovery falls back when a WebView never settles or throws", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const pending = locationPermission({ query: () => new Promise(() => {}) });
+  t.mock.timers.tick(1000);
+  assert.equal(await pending, null);
+  assert.equal(
+    await locationPermission({
+      query: () => {
+        throw new Error("unsupported");
+      },
+    }),
+    null,
+  );
+  assert.equal(await locationPermission(undefined), null);
+  assert.equal(
+    await locationPermission({ query: async () => ({ state: "granted" }) }),
+    "granted",
+  );
+});
+
+test("location has an independent deadline and ignores callbacks after timing out", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let lateSuccess;
+  let lateFailure;
+  const successes = [];
+  const failures = [];
+  requestLocation(
+    {
+      getCurrentPosition(success, failure, options) {
+        lateSuccess = success;
+        lateFailure = failure;
+        assert.equal(options.enableHighAccuracy, false);
+      },
+    },
+    (p) => successes.push(p),
+    (e) => failures.push(e),
+  );
+  t.mock.timers.tick(20000);
+  assert.deepEqual(failures, ["timeout"]);
+  lateSuccess({ coords: { latitude: 51.47, longitude: -0.26 } });
+  lateFailure({ code: 1 });
+  assert.deepEqual(successes, []);
+  assert.deepEqual(failures, ["timeout"]);
+});
+
+test("a cancelled location attempt cannot overwrite a successful retry", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const callbacks = [];
+  const geo = {
+    getCurrentPosition(success) {
+      callbacks.push(success);
+    },
+  };
+  const results = [];
+  const failures = [];
+  const cancel = requestLocation(
+    geo,
+    (p) => results.push(p),
+    (e) => failures.push(e),
+  );
+  cancel();
+  requestLocation(
+    geo,
+    (p) => results.push(p),
+    (e) => failures.push(e),
+  );
+  const position = { coords: { latitude: 51.47, longitude: -0.26 } };
+  callbacks[1](position);
+  callbacks[0]({ coords: { latitude: 0, longitude: 0 } });
+  t.mock.timers.tick(20000);
+  assert.deepEqual(results, [position]);
+  assert.deepEqual(failures, []);
+});
+
+test("location failures distinguish denial, missing APIs, and synchronous WebView errors", () => {
+  const failures = [];
+  const success = () => assert.fail("Unexpected location");
+  const fail = (e) => failures.push(e);
+  requestLocation(undefined, success, fail);
+  requestLocation(
+    {
+      getCurrentPosition() {
+        throw new Error("WebView failure");
+      },
+    },
+    success,
+    fail,
+  );
+  requestLocation(
+    {
+      getCurrentPosition(_success, failure) {
+        failure({ code: 1 });
+      },
+    },
+    success,
+    fail,
+  );
+  assert.deepEqual(failures, ["unsupported", "unavailable", "denied"]);
+});

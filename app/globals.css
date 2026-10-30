@@ -1199,9 +1199,19 @@ select {
     opacity: 0.75;
     width: 72px;
     height: 31px;
-    bottom: 25px;
+    bottom: 83px;
     left: 22px;
     right: auto;
+  }
+  .flight-main:after {
+    left: -70px;
+    right: auto;
+    bottom: -35px;
+    width: 140px;
+    height: 60px;
+    box-shadow:
+      -25px -4px 0 0 #f5f9ff,
+      25px -30px 0 -8px #f5f9ff;
   }
   .data-footer {
     gap: 18px;

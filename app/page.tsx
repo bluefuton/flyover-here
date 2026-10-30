@@ -7,6 +7,7 @@ import BrandMark from "../components/brand-mark";
 import SkyIllustration from "../components/sky-illustration";
 import PositionMap from "../components/position-map";
 import { locationOverride } from "../lib/location-override";
+import { locationPermission, requestLocation } from "../lib/location";
 import { distanceKm, type Aircraft } from "../lib/aircraft";
 function Compass({ bearing }: { bearing: number }) {
   return (
@@ -44,6 +45,7 @@ export default function Home() {
     null,
   );
   const [isOverride, setIsOverride] = useState(false);
+  const [locationIssue, setLocationIssue] = useState(false);
   const [aircraft, setAircraft] = useState<Aircraft | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,20 +57,17 @@ export default function Home() {
   const requestId = useRef(0);
   const activeQuery = useRef("");
   const checkedRadius = useRef(25);
+  const cancelLocation = useRef<(() => void) | null>(null);
   useEffect(() => {
     let disposed = false;
-    const reuseGrantedLocation = async () => {
-      let granted = false;
-      try {
-        if (navigator.permissions && navigator.geolocation)
-          granted =
-            (await navigator.permissions.query({ name: "geolocation" }))
-              .state === "granted";
-      } catch {
-        /* Unknown permission uses the explicit location button. */
-      }
+    let permissionCheck = 0;
+    const reuseGrantedLocation = async (check: number) => {
+      const granted =
+        navigator.geolocation &&
+        (await locationPermission(navigator.permissions)) === "granted";
       if (
         disposed ||
+        check !== permissionCheck ||
         locationOverride(window.location.search).status !== "absent"
       )
         return;
@@ -76,6 +75,9 @@ export default function Home() {
       else setMode("idle");
     };
     const applyUrl = (fromHistory = false) => {
+      const check = ++permissionCheck;
+      cancelLocation.current?.();
+      setLocationIssue(false);
       const override = locationOverride(window.location.search);
       if (override.status === "valid") {
         setIsOverride(true);
@@ -96,7 +98,7 @@ export default function Home() {
           setMode("checking");
           setError("");
         }
-        void reuseGrantedLocation();
+        void reuseGrantedLocation(check);
       }
     };
     const onHistory = () => applyUrl(true);
@@ -104,6 +106,7 @@ export default function Home() {
     window.addEventListener("popstate", onHistory);
     return () => {
       disposed = true;
+      cancelLocation.current?.();
       window.removeEventListener("popstate", onHistory);
     };
   }, []);
@@ -230,6 +233,7 @@ export default function Home() {
       (error) => {
         if (error.code === 1) {
           setMode("idle");
+          setLocationIssue(true);
           setError(
             "Location access is off. Allow location in your browser’s site settings, then try again.",
           );
@@ -240,20 +244,16 @@ export default function Home() {
     return () => navigator.geolocation.clearWatch(watch);
   }, [mode, isOverride]);
   const locate = () => {
+    cancelLocation.current?.();
     requestId.current++;
     setBusy(false);
     setMode("locating");
     setAircraft(null);
     setUpdated(null);
     setError("");
-    if (!navigator.geolocation) {
-      setError(
-        "Location isn’t supported in this browser. Try opening this site in Safari or Chrome.",
-      );
-      setMode("idle");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
+    setLocationIssue(false);
+    cancelLocation.current = requestLocation(
+      navigator.geolocation,
       (p) => {
         const url = new URL(window.location.href);
         url.searchParams.delete("lat");
@@ -267,15 +267,19 @@ export default function Home() {
         setPosition({ lat: p.coords.latitude, lon: p.coords.longitude });
         setMode("live");
       },
-      (e) => {
+      (reason) => {
         setMode("idle");
+        setLocationIssue(true);
         setError(
-          e.code === 1
+          reason === "denied"
             ? "Location access is off. Allow location in your browser’s site settings, then try again."
-            : "We couldn’t find your location. Check your device’s location settings and try again.",
+            : reason === "timeout"
+              ? "Your browser didn’t return a location. Try again, or open this page in Safari or Chrome."
+              : reason === "unsupported"
+                ? "Location isn’t supported in this browser. Open this page in Safari or Chrome."
+                : "We couldn’t find your location. Check your device’s location settings and try again.",
         );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
     );
   };
   const nextRadius = [5, 10, 25, 50, 100].find((r) => r > radius);
@@ -329,6 +333,21 @@ export default function Home() {
         <section className="location-resolving" role="status">
           <span className="location-pulse" aria-hidden="true" />
           <p>Finding your sky…</p>
+          {mode === "locating" && (
+            <button
+              className="text-button"
+              onClick={() => {
+                cancelLocation.current?.();
+                setMode("idle");
+                setLocationIssue(true);
+                setError(
+                  "Location lookup cancelled. You can try again when you’re ready.",
+                );
+              }}
+            >
+              Cancel
+            </button>
+          )}
         </section>
         {footer}
       </main>
@@ -356,6 +375,12 @@ export default function Home() {
               <p className="gate-helper" role="status">
                 {error}
               </p>
+              {locationIssue && (
+                <p className="gate-helper browser-location-help">
+                  Using Facebook’s or Instagram’s browser? Open its ⋯ menu and
+                  choose “Open in browser” to use Safari or Chrome.
+                </p>
+              )}
             </div>
           </div>
           <details className="privacy-note">
