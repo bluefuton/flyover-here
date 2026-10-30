@@ -1201,8 +1201,8 @@ select {
     width: 72px;
     height: 58px;
     bottom: 26px;
-    left: 22px;
-    right: auto;
+    left: auto;
+    right: 22px;
   }
   .flight-main:after {
     display: none;
@@ -1234,9 +1234,9 @@ select {
     height: 113px;
   }
   .flight-main > .distance {
-    text-align: right;
+    text-align: left;
     border: 0;
-    justify-self: end;
+    justify-self: start;
     width: fit-content;
     margin-top: 0;
     padding: 0;
@@ -1244,10 +1244,13 @@ select {
   }
   .flight-main > .distance .board-label {
     max-width: 150px;
-    margin-left: auto;
+    margin-left: 0;
+  }
+  .flight-main > .distance > div {
+    text-align: left;
   }
   .flight-main > .distance .direction {
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 }
 /* Tablet layout */
