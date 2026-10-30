@@ -4,6 +4,8 @@
 
 A whimsical plane-spotting app that shows the nearest aircraft overhead, with live flight data, a map, and aircraft photos.
 
+**Try it: [flyoverhere.bluefuton.com](https://flyoverhere.bluefuton.com)**
+
 ![Flyover Here showing a live aircraft near Mortlake, London](docs/screenshot.jpg)
 
 ## What it does
