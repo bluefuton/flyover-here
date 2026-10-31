@@ -365,7 +365,7 @@ export default function Home() {
           </h1>
           <div className="gate-bottom">
             <p className="gate-description">
-              Enable location to see
+              Enable location to see{" "}
               <br />
               the nearest aircraft.
             </p>
