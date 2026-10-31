@@ -152,7 +152,7 @@ footer a {
   position: relative;
 }
 .location-gate h1 {
-  letter-spacing: -0.065em;
+  letter-spacing: -0.035em;
   max-width: 70%;
   margin: 45px 0 135px;
   font-size: clamp(65px, 8.7vw, 114px);
@@ -1041,7 +1041,6 @@ select {
     font-size: 8px;
   }
   .location-gate h1 {
-    letter-spacing: -0.075em;
     max-width: 100%;
     margin: 5px 0 32px;
     font-size: clamp(60px, 13vw, 88px);
@@ -1270,7 +1269,6 @@ select {
     min-height: 550px;
   }
   .location-gate h1 {
-    letter-spacing: -0.075em;
     margin: 45px 0 125px;
     font-size: 78px;
   }
