@@ -250,6 +250,14 @@ footer a {
 .gate-helper:empty {
   display: none;
 }
+.browser-option {
+  margin-top: 18px;
+  color: var(--accent);
+  font-size: 11px;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .sky-illustration {
   z-index: -1;
   pointer-events: none;

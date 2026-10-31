@@ -4,6 +4,32 @@ export type LocationFailure =
   | "unavailable"
   | "unsupported";
 
+export type LocationAvailability =
+  | { status: "available"; permission: PermissionState | null }
+  | { status: "denied" }
+  | { status: "unavailable"; reason: "insecure" | "missing" | "policy" };
+
+export async function locationAvailability(environment: {
+  secureContext: boolean;
+  geolocation?: Pick<Geolocation, "getCurrentPosition">;
+  permissions?: Pick<Permissions, "query">;
+  policy?: { allowsFeature: (feature: string) => boolean };
+}): Promise<LocationAvailability> {
+  if (environment.secureContext === false)
+    return { status: "unavailable", reason: "insecure" };
+  if (typeof environment.geolocation?.getCurrentPosition !== "function")
+    return { status: "unavailable", reason: "missing" };
+  try {
+    if (environment.policy?.allowsFeature("geolocation") === false)
+      return { status: "unavailable", reason: "policy" };
+  } catch {
+    // Older WebViews can expose an incomplete policy API.
+  }
+  const permission = await locationPermission(environment.permissions);
+  if (permission === "denied") return { status: "denied" };
+  return { status: "available", permission };
+}
+
 // Some embedded browsers expose Permissions but never settle the query.
 export async function locationPermission(
   permissions: Pick<Permissions, "query"> | undefined,

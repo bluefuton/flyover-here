@@ -6,9 +6,13 @@ import AircraftPhoto from "../components/aircraft-photo";
 import BrandMark from "../components/brand-mark";
 import SkyIllustration from "../components/sky-illustration";
 import PositionMap from "../components/position-map";
-import { ArrowIcon, ExpandIcon } from "../components/ui-icons";
+import { ArrowIcon, ExpandIcon, CopyIcon } from "../components/ui-icons";
 import { locationOverride } from "../lib/location-override";
-import { locationPermission, requestLocation } from "../lib/location";
+import {
+  locationAvailability,
+  requestLocation,
+  type LocationAvailability,
+} from "../lib/location";
 import { distanceKm, type Aircraft } from "../lib/aircraft";
 function Compass({ bearing }: { bearing: number }) {
   return (
@@ -38,6 +42,18 @@ const aircraftNames: Record<string, string> = {
   DH8D: "De Havilland Dash 8",
   C172: "Cessna 172",
 };
+function browserLocationAvailability() {
+  const policyDocument = document as Document & {
+    permissionsPolicy?: { allowsFeature: (feature: string) => boolean };
+    featurePolicy?: { allowsFeature: (feature: string) => boolean };
+  };
+  return locationAvailability({
+    secureContext: window.isSecureContext,
+    geolocation: navigator.geolocation,
+    permissions: navigator.permissions,
+    policy: policyDocument.permissionsPolicy || policyDocument.featurePolicy,
+  });
+}
 export default function Home() {
   const [mode, setMode] = useState<"checking" | "idle" | "locating" | "live">(
     "checking",
@@ -47,6 +63,10 @@ export default function Home() {
   );
   const [isOverride, setIsOverride] = useState(false);
   const [locationIssue, setLocationIssue] = useState(false);
+  const [availability, setAvailability] = useState<LocationAvailability | null>(
+    null,
+  );
+  const [copyStatus, setCopyStatus] = useState("");
   const [aircraft, setAircraft] = useState<Aircraft | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -59,26 +79,27 @@ export default function Home() {
   const activeQuery = useRef("");
   const checkedRadius = useRef(25);
   const cancelLocation = useRef<(() => void) | null>(null);
+  const locationCheck = useRef(0);
   useEffect(() => {
     let disposed = false;
-    let permissionCheck = 0;
     const reuseGrantedLocation = async (check: number) => {
-      const granted =
-        navigator.geolocation &&
-        (await locationPermission(navigator.permissions)) === "granted";
+      const access = await browserLocationAvailability();
       if (
         disposed ||
-        check !== permissionCheck ||
+        check !== locationCheck.current ||
         locationOverride(window.location.search).status !== "absent"
       )
         return;
-      if (granted) locate();
+      setAvailability(access);
+      if (access.status === "available" && access.permission === "granted")
+        locate();
       else setMode("idle");
     };
     const applyUrl = (fromHistory = false) => {
-      const check = ++permissionCheck;
+      const check = ++locationCheck.current;
       cancelLocation.current?.();
       setLocationIssue(false);
+      setCopyStatus("");
       const override = locationOverride(window.location.search);
       if (override.status === "valid") {
         setIsOverride(true);
@@ -107,6 +128,7 @@ export default function Home() {
     window.addEventListener("popstate", onHistory);
     return () => {
       disposed = true;
+      locationCheck.current++;
       cancelLocation.current?.();
       window.removeEventListener("popstate", onHistory);
     };
@@ -220,7 +242,13 @@ export default function Home() {
     };
   }, [position, radius, mode, isOverride]);
   useEffect(() => {
-    if (mode !== "live" || isOverride || !navigator.geolocation) return;
+    if (
+      mode !== "live" ||
+      isOverride ||
+      typeof navigator.geolocation?.watchPosition !== "function" ||
+      typeof navigator.geolocation?.clearWatch !== "function"
+    )
+      return;
     const watch = navigator.geolocation.watchPosition(
       (p) => {
         const next = { lat: p.coords.latitude, lon: p.coords.longitude };
@@ -234,6 +262,7 @@ export default function Home() {
       (error) => {
         if (error.code === 1) {
           setMode("idle");
+          setAvailability({ status: "denied" });
           setLocationIssue(true);
           setError(
             "Location access is off. Allow location in your browser’s site settings, then try again.",
@@ -245,6 +274,7 @@ export default function Home() {
     return () => navigator.geolocation.clearWatch(watch);
   }, [mode, isOverride]);
   const locate = () => {
+    locationCheck.current++;
     cancelLocation.current?.();
     requestId.current++;
     setBusy(false);
@@ -253,6 +283,7 @@ export default function Home() {
     setUpdated(null);
     setError("");
     setLocationIssue(false);
+    setCopyStatus("");
     cancelLocation.current = requestLocation(
       navigator.geolocation,
       (p) => {
@@ -271,6 +302,9 @@ export default function Home() {
       (reason) => {
         setMode("idle");
         setLocationIssue(true);
+        if (reason === "denied") setAvailability({ status: "denied" });
+        if (reason === "unsupported")
+          setAvailability({ status: "unavailable", reason: "missing" });
         setError(
           reason === "denied"
             ? "Location access is off. Allow location in your browser’s site settings, then try again."
@@ -283,6 +317,29 @@ export default function Home() {
       },
     );
   };
+  const checkLocation = async (requestIfAvailable = false) => {
+    const check = ++locationCheck.current;
+    cancelLocation.current?.();
+    setMode("checking");
+    setCopyStatus("");
+    setError("");
+    const access = await browserLocationAvailability();
+    if (check !== locationCheck.current) return;
+    setAvailability(access);
+    if (requestIfAvailable && access.status === "available") locate();
+    else setMode("idle");
+  };
+  const copySiteLink = async () => {
+    const url = window.location.origin + window.location.pathname;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyStatus("Link copied. Paste it into Safari or Chrome.");
+    } catch {
+      setCopyStatus(`Open this address in Safari or Chrome: ${url}`);
+    }
+  };
+  const locationBlocked =
+    availability !== null && availability.status !== "available";
   const nextRadius = [5, 10, 25, 50, 100].find((r) => r > radius);
   const retrySeconds = retryAt
     ? Math.max(0, Math.ceil((retryAt - now) / 1000))
@@ -365,23 +422,44 @@ export default function Home() {
           </h1>
           <div className="gate-bottom">
             <p className="gate-description">
-              Enable location to see{" "}
-              <span>the nearest aircraft.</span>
+              {locationBlocked ? (
+                <>
+                  Open in Safari or Chrome <span>to find nearby aircraft.</span>
+                </>
+              ) : (
+                <>
+                  Enable location to see <span>the nearest aircraft.</span>
+                </>
+              )}
             </p>
             <div className="gate-action">
-              <button className="primary" onClick={locate}>
-                Enable location
-                <span>
-                  <ArrowIcon />
-                </span>
+              <button
+                className="primary"
+                onClick={locationBlocked ? copySiteLink : locate}
+              >
+                {locationBlocked ? "Copy site link" : "Enable location"}
+                <span>{locationBlocked ? <CopyIcon /> : <ArrowIcon />}</span>
+              </button>
+              <button
+                className="browser-option"
+                onClick={
+                  locationBlocked ? () => void checkLocation() : copySiteLink
+                }
+              >
+                {locationBlocked
+                  ? "Check location access again"
+                  : "Copy link for another browser"}
               </button>
               <p className="gate-helper" role="status">
-                {error}
+                {copyStatus || error}
               </p>
-              {locationIssue && (
+              {(locationBlocked || locationIssue) && (
                 <p className="gate-helper browser-location-help">
-                  Using Facebook’s or Instagram’s browser? Open its ⋯ menu and
-                  choose “Open in browser” to use Safari or Chrome.
+                  {availability?.status === "denied"
+                    ? "Location is blocked here. You can allow it in your browser’s site settings, then check again, or open the link in another browser."
+                    : availability?.status === "unavailable"
+                      ? "This page can’t use location in the current browser. Copy the link, or use the app’s menu to open it in Safari or Chrome."
+                      : "Location can be unreliable in app browsers. Use the app’s menu to open this page in Safari or Chrome, or copy the link above."}
                 </p>
               )}
             </div>
@@ -620,7 +698,10 @@ export default function Home() {
         </div>
         <div className="settings-right">
           {isOverride && (
-            <button className="text-button" onClick={locate}>
+            <button
+              className="text-button"
+              onClick={() => void checkLocation(true)}
+            >
               Use my location <ArrowIcon />
             </button>
           )}

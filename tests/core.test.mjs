@@ -391,3 +391,83 @@ test("reported emitter categories distinguish rotorcraft and planes without gues
   assert.equal(cfl06.kind, "rotorcraft");
   assert.equal(cfl06.callsign, "CFL06");
 });
+
+const { locationAvailability } = await import(
+  await moduleUrl("../lib/location.ts")
+);
+const locationEnvironment = {
+  secureContext: true,
+  geolocation: {
+    getCurrentPosition() {
+      assert.fail("Preflight must never request a position");
+    },
+  },
+  permissions: { query: async () => ({ state: "prompt" }) },
+};
+
+test("location preflight detects missing APIs, insecure pages, and policy restrictions without prompting", async () => {
+  assert.deepEqual(
+    await locationAvailability({
+      ...locationEnvironment,
+      geolocation: undefined,
+    }),
+    { status: "unavailable", reason: "missing" },
+  );
+  assert.deepEqual(
+    await locationAvailability({
+      ...locationEnvironment,
+      secureContext: false,
+    }),
+    { status: "unavailable", reason: "insecure" },
+  );
+  assert.deepEqual(
+    await locationAvailability({
+      ...locationEnvironment,
+      policy: { allowsFeature: () => false },
+    }),
+    { status: "unavailable", reason: "policy" },
+  );
+  assert.deepEqual(
+    await locationAvailability({
+      ...locationEnvironment,
+      permissions: { query: async () => ({ state: "denied" }) },
+    }),
+    { status: "denied" },
+  );
+});
+
+test("preflight permits prompts and granted access using capabilities alone", async () => {
+  assert.deepEqual(await locationAvailability(locationEnvironment), {
+    status: "available",
+    permission: "prompt",
+  });
+  assert.deepEqual(
+    await locationAvailability({
+      ...locationEnvironment,
+      permissions: { query: async () => ({ state: "granted" }) },
+    }),
+    { status: "available", permission: "granted" },
+  );
+});
+
+test("preflight stays usable when permission queries hang or policy inspection throws", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const pending = locationAvailability({
+    ...locationEnvironment,
+    permissions: { query: () => new Promise(() => {}) },
+    policy: {
+      allowsFeature() {
+        throw new Error("WebView policy error");
+      },
+    },
+  });
+  t.mock.timers.tick(1000);
+  assert.deepEqual(await pending, { status: "available", permission: null });
+  assert.deepEqual(
+    await locationAvailability({
+      ...locationEnvironment,
+      permissions: undefined,
+    }),
+    { status: "available", permission: null },
+  );
+});

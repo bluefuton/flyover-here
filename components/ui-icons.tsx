@@ -45,3 +45,32 @@ export function ExpandIcon({ expanded = false }: { expanded?: boolean }) {
     </svg>
   );
 }
+
+export function CopyIcon() {
+  return (
+    <svg
+      className="ui-icon"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect
+        x="5"
+        y="5"
+        width="8"
+        height="9"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.25"
+      />
+      <path
+        d="M10 3V2H2v9h1"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
