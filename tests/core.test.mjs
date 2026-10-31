@@ -214,7 +214,12 @@ test("flight metadata requires an exact callsign record and does not invent flig
           ),
         )
       ).json();
-      assert.deepEqual(result.flight, { number, airline });
+      assert.deepEqual(result.flight, {
+        number,
+        airline,
+        origin: null,
+        destination: null,
+      });
     }
     for (const callsign of ["SHT8R"]) {
       const result = await (
@@ -470,4 +475,94 @@ test("preflight stays usable when permission queries hang or policy inspection t
     }),
     { status: "available", permission: null },
   );
+});
+
+test("flight routes preserve available airports, handle partial records, and require an exact callsign", async () => {
+  const realFetch = globalThis.fetch;
+  const origin = {
+    name: " Tokyo Haneda Airport ",
+    municipality: " Tokyo ",
+    iata_code: " hnd ",
+    icao_code: "RJTT",
+  };
+  const destination = {
+    name: "London Heathrow Airport",
+    municipality: "London",
+    iata_code: "LHR",
+    icao_code: "EGLL",
+  };
+  try {
+    globalThis.fetch = async (url) => {
+      const callsign = String(url).split("/").at(-1);
+      const both = {
+        callsign_icao: callsign,
+        callsign_iata: `NH${callsign.slice(3)}`,
+        airline: { name: "All Nippon Airways" },
+        origin,
+        destination,
+      };
+      const examples = {
+        ANA211: both,
+        ANA212: { ...both, origin: null },
+        ANA213: {
+          callsign_icao: callsign,
+          origin: { name: " ", iata_code: 123 },
+          destination: "invalid",
+        },
+        ANA214: { ...both, callsign_icao: "ANA999" },
+        ANA215: {
+          ...both,
+          origin: {
+            name: "Remote Airstrip",
+            iata_code: "not a code",
+            icao_code: "nzxx",
+          },
+          destination: null,
+        },
+      };
+      return Response.json({ response: { flightroute: examples[callsign] } });
+    };
+    const { GET } = await import(
+      await moduleUrl("../app/api/flight-number/route.ts")
+    );
+    const get = async (callsign) =>
+      (
+        await (
+          await GET(
+            new Request(
+              `http://localhost/api/flight-number?callsign=${callsign}`,
+            ),
+          )
+        ).json()
+      ).flight;
+    assert.deepEqual(await get("ANA211"), {
+      number: "NH211",
+      airline: "All Nippon Airways",
+      origin: { name: "Tokyo Haneda Airport", city: "Tokyo", code: "HND" },
+      destination: {
+        name: "London Heathrow Airport",
+        city: "London",
+        code: "LHR",
+      },
+    });
+    assert.deepEqual(await get("ANA212"), {
+      number: "NH212",
+      airline: "All Nippon Airways",
+      origin: null,
+      destination: {
+        name: "London Heathrow Airport",
+        city: "London",
+        code: "LHR",
+      },
+    });
+    assert.equal(await get("ANA213"), null);
+    assert.equal(await get("ANA214"), null);
+    assert.deepEqual((await get("ANA215")).origin, {
+      name: "Remote Airstrip",
+      city: null,
+      code: "NZXX",
+    });
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

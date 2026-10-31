@@ -26,7 +26,7 @@ Open **http://localhost:5173** and allow location access. To try a public test l
 The closest reported airborne aircraft within 5–100 km is selected by ground distance and refreshed about every 15 seconds. Stale positions are excluded, background tabs pause polling, and failures back off automatically. Nearby does not necessarily mean directly overhead.
 
 - [adsb.lol](https://www.adsb.lol/docs/open-data/api/): aircraft positions and telemetry ([ODbL](https://opendatacommons.org/licenses/odbl/1-0/)).
-- [adsbdb](https://www.adsbdb.com/): operators and available flight numbers; callsigns can differ from passenger flight numbers.
+- [adsbdb](https://www.adsbdb.com/): operators, routes, and available flight numbers; callsigns can differ from passenger flight numbers.
 - [Planespotters.net](https://www.planespotters.net/photo/api): credited aircraft photos, which may show an earlier livery.
 - [OpenStreetMap](https://www.openstreetmap.org/copyright): map tiles and geographic data.
 

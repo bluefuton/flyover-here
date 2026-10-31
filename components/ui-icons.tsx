@@ -1,7 +1,7 @@
 export function ArrowIcon({
   direction = "up-right",
 }: {
-  direction?: "up" | "up-right";
+  direction?: "up" | "up-right" | "right";
 }) {
   return (
     <svg
@@ -12,7 +12,13 @@ export function ArrowIcon({
       focusable="false"
     >
       <path
-        d={direction === "up" ? "M8 13V3m-5 5 5-5 5 5" : "M3 13 13 3M3 3h10v10"}
+        d={
+          direction === "up"
+            ? "M8 13V3m-5 5 5-5 5 5"
+            : direction === "right"
+              ? "M3 8h10m-5-5 5 5-5 5"
+              : "M3 13 13 3M3 3h10v10"
+        }
         stroke="currentColor"
         strokeWidth="1.25"
         strokeLinecap="round"

@@ -1,10 +1,34 @@
+import type { FlightAirport, FlightInformation } from "../../../lib/flight";
+
 type Route = {
   callsign_icao?: string;
   callsign_iata?: string;
   airline?: { name?: string };
+  origin?: unknown;
+  destination?: unknown;
 };
-type Flight = { number: string | null; airline: string | null };
-const cache = new Map<string, { flight: Flight | null; expires: number }>();
+const cache = new Map<
+  string,
+  { flight: FlightInformation | null; expires: number }
+>();
+
+function airport(value: unknown): FlightAirport | null {
+  if (!value || typeof value !== "object") return null;
+  const fields = value as Record<string, unknown>;
+  const text = (key: string) =>
+    typeof fields[key] === "string" ? fields[key].trim() || null : null;
+  const iata = text("iata_code")?.toUpperCase();
+  const icao = text("icao_code")?.toUpperCase();
+  const code =
+    iata && /^[A-Z]{3}$/.test(iata)
+      ? iata
+      : icao && /^[A-Z0-9]{4}$/.test(icao)
+        ? icao
+        : null;
+  const name = text("name");
+  const city = text("municipality");
+  return name || city || code ? { name, city, code } : null;
+}
 export async function GET(request: Request) {
   const callsign = (new URL(request.url).searchParams.get("callsign") || "")
     .trim()
@@ -41,7 +65,12 @@ export async function GET(request: Request) {
     // Prefix-only matches can mistake rescue callsigns for foreign airlines.
     const airline =
       typeof matched?.airline?.name === "string" ? matched.airline.name : null;
-    const flight = number || airline ? { number, airline } : null;
+    const origin = airport(matched?.origin);
+    const destination = airport(matched?.destination);
+    const flight =
+      number || airline || origin || destination
+        ? { number, airline, origin, destination }
+        : null;
     if (cache.size >= 256) cache.delete(cache.keys().next().value!);
     cache.set(callsign, { flight, expires: Date.now() + 600000 });
     return Response.json(

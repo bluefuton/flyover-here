@@ -551,6 +551,34 @@ footer a {
   font-weight: 400;
   font-size: inherit;
 }
+.flight-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.route-airport {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.route-label,
+.airport-code {
+  color: var(--muted);
+  font-size: 12px;
+}
+.airport-code {
+  margin-left: 5px;
+}
+.flight-route > .ui-icon {
+  align-self: center;
+  color: var(--muted);
+  width: 12px;
+  height: 12px;
+}
 /* Position map */
 .map-section {
   padding-top: 26px;

@@ -1,7 +1,26 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { AircraftKind } from "../lib/aircraft";
-type Flight = { number: string | null; airline: string | null };
+import type { FlightAirport, FlightInformation } from "../lib/flight";
+import { ArrowIcon } from "./ui-icons";
+
+function AirportLabel({
+  airport,
+  label,
+}: {
+  airport: FlightAirport;
+  label: string;
+}) {
+  const name = airport.city || airport.name || airport.code;
+  return (
+    <span className="route-airport" title={airport.name || undefined}>
+      <span className="route-label">{label}</span> {name}
+      {airport.code && airport.code !== name && (
+        <span className="airport-code"> {airport.code}</span>
+      )}
+    </span>
+  );
+}
 export default function FlightIdentity({
   callsign,
   registration,
@@ -13,7 +32,7 @@ export default function FlightIdentity({
 }) {
   const [result, setResult] = useState<{
     callsign: string;
-    flight: Flight | null;
+    flight: FlightInformation | null;
   } | null>(null);
   useEffect(() => {
     if (kind === "rotorcraft") return;
@@ -27,7 +46,7 @@ export default function FlightIdentity({
         if (!controller.signal.aborted)
           setResult({
             callsign,
-            flight: (data as { flight: Flight | null }).flight,
+            flight: (data as { flight: FlightInformation | null }).flight,
           });
       })
       .catch(() => {
@@ -56,6 +75,19 @@ export default function FlightIdentity({
             </span>
           )}
         </div>
+      )}
+      {(flight?.origin || flight?.destination) && (
+        <p className="flight-route" title="Route reported by adsbdb">
+          {flight.origin && (
+            <AirportLabel airport={flight.origin} label="From" />
+          )}
+          {flight.origin && flight.destination && (
+            <ArrowIcon direction="right" />
+          )}
+          {flight.destination && (
+            <AirportLabel airport={flight.destination} label="To" />
+          )}
+        </p>
       )}
     </>
   );

@@ -757,12 +757,13 @@ export default function Home() {
             >
               ODbL 1.0
             </a>
-            . Flight numbers are looked up using{" "}
+            . Flight numbers and routes are looked up using{" "}
             <a href="https://www.adsbdb.com/" target="_blank" rel="noreferrer">
               adsbdb
             </a>{" "}
-            when a callsign match is available. Aircraft photos are matched by
-            ICAO aircraft ID and provided by Planespotters.net with photographer
+            when a callsign match is available. Route records may not reflect
+            diversions or schedule changes. Aircraft photos are matched by ICAO
+            aircraft ID and provided by Planespotters.net with photographer
             credit. They may show an earlier livery. For curiosity, not
             navigation.
           </p>
