@@ -219,6 +219,9 @@ footer a {
   font-size: 11px;
   line-height: 1.5;
 }
+.gate-helper[role="status"] {
+  margin-top: 24px;
+}
 .privacy-note {
   color: #58799d;
   max-width: 400px;
