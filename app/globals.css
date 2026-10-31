@@ -173,6 +173,9 @@ footer a {
   display: grid;
   position: relative;
 }
+.gate-description span {
+  display: block;
+}
 .gate-description {
   letter-spacing: -0.7px;
   color: #3e6089;
@@ -1174,8 +1177,8 @@ select {
   .location-page footer {
     margin-top: 26px;
   }
-  .gate-description br {
-    display: none;
+  .gate-description span {
+    display: inline;
   }
   .brand-symbol {
     width: 49px;

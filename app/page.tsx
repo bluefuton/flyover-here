@@ -366,8 +366,7 @@ export default function Home() {
           <div className="gate-bottom">
             <p className="gate-description">
               Enable location to see{" "}
-              <br />
-              the nearest aircraft.
+              <span>the nearest aircraft.</span>
             </p>
             <div className="gate-action">
               <button className="primary" onClick={locate}>
