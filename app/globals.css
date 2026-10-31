@@ -339,12 +339,15 @@ footer a {
   font-weight: 600;
   display: block;
 }
+.aircraft-model,
+.flight-route {
+  font-size: 15px;
+}
 .aircraft-model {
   letter-spacing: -0.2px;
   flex-wrap: wrap;
   align-items: center;
   gap: 9px 18px;
-  font-size: 15px;
   display: flex;
 }
 .distance {
@@ -558,7 +561,6 @@ footer a {
   gap: 6px 10px;
   margin: 0 0 12px;
   color: var(--ink);
-  font-size: 14px;
   line-height: 1.6;
 }
 .route-airport {
@@ -568,7 +570,7 @@ footer a {
 .route-label,
 .airport-code {
   color: var(--muted);
-  font-size: 12px;
+  font-size: inherit;
 }
 .airport-code {
   margin-left: 5px;
@@ -1132,9 +1134,12 @@ select {
   .board-label {
     font-size: 8px;
   }
+  .aircraft-model,
+  .flight-route {
+    font-size: 13px;
+  }
   .aircraft-model {
     gap: 8px 13px;
-    font-size: 13px;
   }
   .distance {
     border-left: 0;
