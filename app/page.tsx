@@ -511,7 +511,7 @@ export default function Home() {
                 <div className="aircraft-model">
                   <span>
                     {visible.kind === "rotorcraft"
-                      ? "Rotorcraft"
+                      ? "Helicopter"
                       : visible.kind === "plane"
                         ? "Plane"
                         : ""}
