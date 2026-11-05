@@ -672,38 +672,39 @@ export default function Home() {
           referenceLabel={isOverride ? "Location" : "You"}
         />
       )}
-      <div className="settings">
-        <div className="settings-left">
-          <label htmlFor="radius">RANGE</label>
-          <select
-            id="radius"
-            aria-label="Search radius"
-            disabled={locationLocked}
-            value={radius}
-            onChange={(e) => setRadius(Number(e.target.value))}
-          >
-            <option value={5}>5 km</option>
-            <option value={10}>10 km</option>
-            <option value={25}>25 km</option>
-            <option value={50}>50 km</option>
-            <option value={100}>100 km</option>
-          </select>
-        </div>
-        <div className="settings-right">
-          {!locationLocked && isOverride && (
-            <button
-              className="text-button"
-              onClick={() => void checkLocation(true)}
+      {!locationLocked && (
+        <div className="settings">
+          <div className="settings-left">
+            <label htmlFor="radius">RANGE</label>
+            <select
+              id="radius"
+              aria-label="Search radius"
+              value={radius}
+              onChange={(e) => setRadius(Number(e.target.value))}
             >
-              Use my location <ArrowIcon />
+              <option value={5}>5 km</option>
+              <option value={10}>10 km</option>
+              <option value={25}>25 km</option>
+              <option value={50}>50 km</option>
+              <option value={100}>100 km</option>
+            </select>
+          </div>
+          <div className="settings-right">
+            {isOverride && (
+              <button
+                className="text-button"
+                onClick={() => void checkLocation(true)}
+              >
+                Use my location <ArrowIcon />
+              </button>
+            )}
+            <button className="text-button" onClick={toggleFullscreen}>
+              {fullscreen ? "Exit full screen" : "Full screen"}{" "}
+              <ExpandIcon expanded={fullscreen} />
             </button>
-          )}
-          <button className="text-button" onClick={toggleFullscreen}>
-            {fullscreen ? "Exit full screen" : "Full screen"}{" "}
-            <ExpandIcon expanded={fullscreen} />
-          </button>
+          </div>
         </div>
-      </div>
+      )}
       <div className="data-footer">
         <details
           className="data-note"
