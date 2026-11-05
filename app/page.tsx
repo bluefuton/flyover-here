@@ -419,18 +419,6 @@ export default function Home() {
         {locationLocked ? (
           <div className="locked-aircraft">
             <div className="aircraft-preview" aria-hidden="true" inert>
-              <div className="flight-main">
-                <div className="preview-identity">
-                  <span className="board-label">REGISTRATION</span>
-                  <div className="preview-registration" />
-                  <div className="preview-airline" />
-                  <div className="preview-type" />
-                </div>
-                <div className="distance">
-                  <span className="board-label">DISTANCE FROM YOU</span>
-                  <div className="preview-distance" />
-                </div>
-              </div>
               <div className="metrics">
                 {["ALTITUDE", "GROUND SPEED", "HEADING", "VERTICAL RATE"].map(
                   (label) => (
@@ -443,7 +431,7 @@ export default function Home() {
               </div>
             </div>
             <section
-              className="location-prompt"
+              className="flight-main location-prompt"
               aria-labelledby="location-title"
               aria-busy={resolvingLocation}
             >
@@ -487,18 +475,14 @@ export default function Home() {
                       {locationBlocked ? <CopyIcon /> : <ArrowIcon />}
                     </span>
                   </button>
-                  <button
-                    className="browser-option"
-                    onClick={
-                      locationBlocked
-                        ? () => void checkLocation()
-                        : copySiteLink
-                    }
-                  >
-                    {locationBlocked
-                      ? "Check location access again"
-                      : "Copy link for another browser"}
-                  </button>
+                  {locationBlocked && (
+                    <button
+                      className="browser-option"
+                      onClick={() => void checkLocation()}
+                    >
+                      Check location access again
+                    </button>
+                  )}
                   <p className="gate-helper" role="status">
                     {copyStatus || error}
                   </p>
@@ -508,7 +492,7 @@ export default function Home() {
                         ? "Location is blocked here. You can allow it in your browser’s site settings, then check again, or open the link in another browser."
                         : availability?.status === "unavailable"
                           ? "This page can’t use location in the current browser. Copy the link, or use the app’s menu to open it in Safari or Chrome."
-                          : "Location can be unreliable in app browsers. Use the app’s menu to open this page in Safari or Chrome, or copy the link above."}
+                          : "Location can be unreliable in app browsers. Use the app’s menu to open this page in Safari or Chrome."}
                     </p>
                   )}
                   <details className="privacy-note">

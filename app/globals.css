@@ -1231,64 +1231,37 @@ select {
 
 /* Location permission stays within the aircraft display. */
 .locked-aircraft {
-  isolation: isolate;
-  position: relative;
-  padding: 44px 24px;
-  min-height: 490px;
-  overflow: hidden;
-  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
 }
 .aircraft-preview {
-  position: absolute;
-  inset: 0;
   pointer-events: none;
   user-select: none;
   filter: blur(6px);
   opacity: 0.48;
 }
-.aircraft-preview .flight-main {
-  min-height: 310px;
-}
-.preview-registration,
-.preview-airline,
-.preview-type,
-.preview-distance,
 .preview-value {
   background: #7da2cb;
   border-radius: 7px;
-}
-.preview-registration {
-  width: min(300px, 80%);
-  height: 65px;
-  margin: 22px 0 26px;
-}
-.preview-airline {
-  width: 210px;
-  height: 18px;
-  margin-bottom: 18px;
-}
-.preview-type {
-  width: 160px;
-  height: 12px;
-}
-.preview-distance {
-  width: 100px;
-  height: 48px;
-  margin-top: 22px;
-}
-.preview-value {
   width: 82px;
   height: 28px;
   margin-top: 22px;
 }
 .location-prompt {
+  order: -1;
+  display: block;
+  min-height: 330px;
+}
+.location-prompt > * {
   position: relative;
-  max-width: 380px;
-  margin: 0 auto;
-  padding: 28px;
-  border-radius: 20px;
-  background: #edf5fff2;
-  box-shadow: 0 8px 50px #edf5ff;
+  z-index: 1;
+}
+.location-prompt .primary {
+  max-width: 300px;
+}
+.location-prompt .gate-helper {
+  max-width: 420px;
+  color: #3e6089;
 }
 .location-prompt .brand-symbol {
   width: 55px;
@@ -1303,7 +1276,7 @@ select {
 }
 .location-description {
   margin: 13px 0 24px;
-  color: var(--muted);
+  color: var(--ink);
   font-size: 15px;
   line-height: 1.5;
 }
@@ -1327,14 +1300,8 @@ select:disabled {
   cursor: default;
 }
 @media (max-width: 760px) {
-  .locked-aircraft {
-    padding: 40px 10px;
-    min-height: 540px;
-  }
   .location-prompt {
-    padding: 24px 16px;
-  }
-  .aircraft-preview .flight-main {
-    min-height: 370px;
+    min-height: 350px;
+    padding: 28px 22px;
   }
 }
