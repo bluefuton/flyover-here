@@ -4,7 +4,6 @@ import ClearSkyIllustration from "../components/clear-sky-illustration";
 import FlightNumber from "../components/flight-number";
 import AircraftPhoto from "../components/aircraft-photo";
 import BrandMark from "../components/brand-mark";
-import SkyIllustration from "../components/sky-illustration";
 import PositionMap from "../components/position-map";
 import { ArrowIcon, ExpandIcon, CopyIcon } from "../components/ui-icons";
 import { locationOverride } from "../lib/location-override";
@@ -384,98 +383,8 @@ export default function Home() {
       </a>
     </footer>
   );
-  if (mode === "checking" || mode === "locating")
-    return (
-      <main className="location-page" aria-busy="true">
-        {header}
-        <section className="location-resolving" role="status">
-          <span className="location-pulse" aria-hidden="true" />
-          <p>Finding your sky…</p>
-          {mode === "locating" && (
-            <button
-              className="text-button"
-              onClick={() => {
-                cancelLocation.current?.();
-                setMode("idle");
-                setLocationIssue(true);
-                setError(
-                  "Location lookup cancelled. You can try again when you’re ready.",
-                );
-              }}
-            >
-              Cancel
-            </button>
-          )}
-        </section>
-        {footer}
-      </main>
-    );
-  if (mode === "idle")
-    return (
-      <main className="location-page">
-        {header}
-        <section className="location-gate" aria-labelledby="location-title">
-          <SkyIllustration />
-
-          <h1 id="location-title">
-            What’s <span>up?</span>
-          </h1>
-          <div className="gate-bottom">
-            <p className="gate-description">
-              {locationBlocked ? (
-                <>
-                  Open in Safari or Chrome <span>to find nearby aircraft.</span>
-                </>
-              ) : (
-                <>
-                  Enable location to see <span>the nearest aircraft.</span>
-                </>
-              )}
-            </p>
-            <div className="gate-action">
-              <button
-                className="primary"
-                onClick={locationBlocked ? copySiteLink : locate}
-              >
-                {locationBlocked ? "Copy site link" : "Enable location"}
-                <span>{locationBlocked ? <CopyIcon /> : <ArrowIcon />}</span>
-              </button>
-              <button
-                className="browser-option"
-                onClick={
-                  locationBlocked ? () => void checkLocation() : copySiteLink
-                }
-              >
-                {locationBlocked
-                  ? "Check location access again"
-                  : "Copy link for another browser"}
-              </button>
-              <p className="gate-helper" role="status">
-                {copyStatus || error}
-              </p>
-              {(locationBlocked || locationIssue) && (
-                <p className="gate-helper browser-location-help">
-                  {availability?.status === "denied"
-                    ? "Location is blocked here. You can allow it in your browser’s site settings, then check again, or open the link in another browser."
-                    : availability?.status === "unavailable"
-                      ? "This page can’t use location in the current browser. Copy the link, or use the app’s menu to open it in Safari or Chrome."
-                      : "Location can be unreliable in app browsers. Use the app’s menu to open this page in Safari or Chrome, or copy the link above."}
-                </p>
-              )}
-            </div>
-          </div>
-          <details className="privacy-note">
-            <summary>How your location is used</summary>
-            <p>
-              Your location is sent to this site and adsb.lol for flight
-              lookups. OpenStreetMap receives the map area you view. This app
-              doesn’t save your location.
-            </p>
-          </details>
-        </section>
-        {footer}
-      </main>
-    );
+  const locationLocked = mode !== "live";
+  const resolvingLocation = mode === "checking" || mode === "locating";
   return (
     <main>
       {header}
@@ -488,18 +397,133 @@ export default function Home() {
           {isOverride && (
             <span className="override-label">Custom location</span>
           )}
-          <span className={error || stale ? "status-dot" : "status-dot on"} />
-          {error || stale
-            ? "Connection interrupted"
-            : busy
-              ? "Updating"
-              : updated
-                ? "Live · updates every 15s"
-                : "Connecting"}
+          <span
+            className={
+              locationLocked || error || stale ? "status-dot" : "status-dot on"
+            }
+          />
+          {locationLocked
+            ? resolvingLocation
+              ? "Finding your location"
+              : "Location needed"
+            : error || stale
+              ? "Connection interrupted"
+              : busy
+                ? "Updating"
+                : updated
+                  ? "Live · updates every 15s"
+                  : "Connecting"}
         </div>
       </section>
       <section className="display" aria-label="Nearest aircraft display">
-        {visible ? (
+        {locationLocked ? (
+          <div className="locked-aircraft">
+            <div className="aircraft-preview" aria-hidden="true" inert>
+              <div className="flight-main">
+                <div className="preview-identity">
+                  <span className="board-label">REGISTRATION</span>
+                  <div className="preview-registration" />
+                  <div className="preview-airline" />
+                  <div className="preview-type" />
+                </div>
+                <div className="distance">
+                  <span className="board-label">DISTANCE FROM YOU</span>
+                  <div className="preview-distance" />
+                </div>
+              </div>
+              <div className="metrics">
+                {["ALTITUDE", "GROUND SPEED", "HEADING", "VERTICAL RATE"].map(
+                  (label) => (
+                    <div key={label}>
+                      <span className="board-label">{label}</span>
+                      <div className="preview-value" />
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+            <section
+              className="location-prompt"
+              aria-labelledby="location-title"
+              aria-busy={resolvingLocation}
+            >
+              <BrandMark />
+              <h1 id="location-title">What’s up?</h1>
+              {resolvingLocation ? (
+                <div className="inline-location-resolving" role="status">
+                  <p>
+                    <span className="location-pulse" aria-hidden="true" />
+                    Finding your sky…
+                  </p>
+                  {mode === "locating" && (
+                    <button
+                      className="text-button"
+                      onClick={() => {
+                        cancelLocation.current?.();
+                        setMode("idle");
+                        setLocationIssue(true);
+                        setError(
+                          "Location lookup cancelled. You can try again when you’re ready.",
+                        );
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <p className="location-description">
+                    {locationBlocked
+                      ? "Open in Safari or Chrome to find nearby aircraft."
+                      : "Enable location to see the nearest aircraft."}
+                  </p>
+                  <button
+                    className="primary"
+                    onClick={locationBlocked ? copySiteLink : locate}
+                  >
+                    {locationBlocked ? "Copy site link" : "Enable location"}
+                    <span>
+                      {locationBlocked ? <CopyIcon /> : <ArrowIcon />}
+                    </span>
+                  </button>
+                  <button
+                    className="browser-option"
+                    onClick={
+                      locationBlocked
+                        ? () => void checkLocation()
+                        : copySiteLink
+                    }
+                  >
+                    {locationBlocked
+                      ? "Check location access again"
+                      : "Copy link for another browser"}
+                  </button>
+                  <p className="gate-helper" role="status">
+                    {copyStatus || error}
+                  </p>
+                  {(locationBlocked || locationIssue) && (
+                    <p className="gate-helper browser-location-help">
+                      {availability?.status === "denied"
+                        ? "Location is blocked here. You can allow it in your browser’s site settings, then check again, or open the link in another browser."
+                        : availability?.status === "unavailable"
+                          ? "This page can’t use location in the current browser. Copy the link, or use the app’s menu to open it in Safari or Chrome."
+                          : "Location can be unreliable in app browsers. Use the app’s menu to open this page in Safari or Chrome, or copy the link above."}
+                    </p>
+                  )}
+                  <details className="privacy-note">
+                    <summary>How your location is used</summary>
+                    <p>
+                      Your location is sent to this site and adsb.lol for flight
+                      lookups. OpenStreetMap receives the map area you view.
+                      This app doesn’t save your location.
+                    </p>
+                  </details>
+                </>
+              )}
+            </section>
+          </div>
+        ) : visible ? (
           <>
             <div className="flight-main">
               <div className="flight-identity">
@@ -660,7 +684,7 @@ export default function Home() {
             )}
           </div>
         )}
-        {(visible || (!error && !stale)) && (
+        {!locationLocked && (visible || (!error && !stale)) && (
           <div className="updated" aria-live="polite">
             {error ||
               (stale
@@ -673,7 +697,7 @@ export default function Home() {
           </div>
         )}
       </section>
-      {position && (
+      {!locationLocked && position && (
         <PositionMap
           position={position}
           aircraft={visible}
@@ -686,6 +710,7 @@ export default function Home() {
           <select
             id="radius"
             aria-label="Search radius"
+            disabled={locationLocked}
             value={radius}
             onChange={(e) => setRadius(Number(e.target.value))}
           >
@@ -697,7 +722,7 @@ export default function Home() {
           </select>
         </div>
         <div className="settings-right">
-          {isOverride && (
+          {!locationLocked && isOverride && (
             <button
               className="text-button"
               onClick={() => void checkLocation(true)}
