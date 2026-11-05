@@ -417,96 +417,80 @@ export default function Home() {
       </section>
       <section className="display" aria-label="Nearest aircraft display">
         {locationLocked ? (
-          <div className="locked-aircraft">
-            <div className="aircraft-preview" aria-hidden="true" inert>
-              <div className="metrics">
-                {["ALTITUDE", "GROUND SPEED", "HEADING", "VERTICAL RATE"].map(
-                  (label) => (
-                    <div key={label}>
-                      <span className="board-label">{label}</span>
-                      <div className="preview-value" />
-                    </div>
-                  ),
+          <section
+            className="flight-main location-prompt"
+            aria-labelledby="location-title"
+            aria-busy={resolvingLocation}
+          >
+            <BrandMark />
+            <h1 id="location-title">What’s up?</h1>
+            {resolvingLocation ? (
+              <div className="inline-location-resolving" role="status">
+                <p>
+                  <span className="location-pulse" aria-hidden="true" />
+                  Finding your sky…
+                </p>
+                {mode === "locating" && (
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      cancelLocation.current?.();
+                      setMode("idle");
+                      setLocationIssue(true);
+                      setError(
+                        "Location lookup cancelled. You can try again when you’re ready.",
+                      );
+                    }}
+                  >
+                    Cancel
+                  </button>
                 )}
               </div>
-            </div>
-            <section
-              className="flight-main location-prompt"
-              aria-labelledby="location-title"
-              aria-busy={resolvingLocation}
-            >
-              <BrandMark />
-              <h1 id="location-title">What’s up?</h1>
-              {resolvingLocation ? (
-                <div className="inline-location-resolving" role="status">
-                  <p>
-                    <span className="location-pulse" aria-hidden="true" />
-                    Finding your sky…
-                  </p>
-                  {mode === "locating" && (
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        cancelLocation.current?.();
-                        setMode("idle");
-                        setLocationIssue(true);
-                        setError(
-                          "Location lookup cancelled. You can try again when you’re ready.",
-                        );
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <p className="location-description">
-                    {locationBlocked
-                      ? "Open in Safari or Chrome to find nearby aircraft."
-                      : "Enable location to see the nearest aircraft."}
-                  </p>
+            ) : (
+              <>
+                <p className="location-description">
+                  {locationBlocked
+                    ? "Open in Safari or Chrome to find nearby aircraft."
+                    : "Enable location to see the nearest aircraft."}
+                </p>
+                <button
+                  className="primary"
+                  onClick={locationBlocked ? copySiteLink : locate}
+                >
+                  {locationBlocked ? "Copy site link" : "Enable location"}
+                  <span>{locationBlocked ? <CopyIcon /> : <ArrowIcon />}</span>
+                </button>
+                {locationBlocked && (
                   <button
-                    className="primary"
-                    onClick={locationBlocked ? copySiteLink : locate}
+                    className="browser-option"
+                    onClick={() => void checkLocation()}
                   >
-                    {locationBlocked ? "Copy site link" : "Enable location"}
-                    <span>
-                      {locationBlocked ? <CopyIcon /> : <ArrowIcon />}
-                    </span>
+                    Check location access again
                   </button>
-                  {locationBlocked && (
-                    <button
-                      className="browser-option"
-                      onClick={() => void checkLocation()}
-                    >
-                      Check location access again
-                    </button>
-                  )}
-                  <p className="gate-helper" role="status">
-                    {copyStatus || error}
+                )}
+                <p className="gate-helper" role="status">
+                  {copyStatus || error}
+                </p>
+                {(locationBlocked || locationIssue) && (
+                  <p className="gate-helper browser-location-help">
+                    {availability?.status === "denied"
+                      ? "Location is blocked here. You can allow it in your browser’s site settings, then check again, or open the link in another browser."
+                      : availability?.status === "unavailable"
+                        ? "This page can’t use location in the current browser. Copy the link, or use the app’s menu to open it in Safari or Chrome."
+                        : "Location can be unreliable in app browsers. Use the app’s menu to open this page in Safari or Chrome."}
                   </p>
-                  {(locationBlocked || locationIssue) && (
-                    <p className="gate-helper browser-location-help">
-                      {availability?.status === "denied"
-                        ? "Location is blocked here. You can allow it in your browser’s site settings, then check again, or open the link in another browser."
-                        : availability?.status === "unavailable"
-                          ? "This page can’t use location in the current browser. Copy the link, or use the app’s menu to open it in Safari or Chrome."
-                          : "Location can be unreliable in app browsers. Use the app’s menu to open this page in Safari or Chrome."}
-                    </p>
-                  )}
-                  <details className="privacy-note">
-                    <summary>How your location is used</summary>
-                    <p>
-                      Your location is sent to this site and adsb.lol for flight
-                      lookups. OpenStreetMap receives the map area you view.
-                      This app doesn’t save your location.
-                    </p>
-                  </details>
-                </>
-              )}
-            </section>
-          </div>
+                )}
+                <details className="privacy-note">
+                  <summary>How your location is used</summary>
+                  <p>
+                    Your location is sent to this site and adsb.lol for flight
+                    lookups. OpenStreetMap receives the map area you view. This
+                    app doesn’t save your location.
+                  </p>
+                </details>
+              </>
+            )}
+          </section>
         ) : visible ? (
           <>
             <div className="flight-main">

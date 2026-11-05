@@ -1230,25 +1230,7 @@ select {
 }
 
 /* Location permission stays within the aircraft display. */
-.locked-aircraft {
-  display: flex;
-  flex-direction: column;
-}
-.aircraft-preview {
-  pointer-events: none;
-  user-select: none;
-  filter: blur(6px);
-  opacity: 0.48;
-}
-.preview-value {
-  background: #7da2cb;
-  border-radius: 7px;
-  width: 82px;
-  height: 28px;
-  margin-top: 22px;
-}
 .location-prompt {
-  order: -1;
   display: block;
   min-height: 330px;
 }
