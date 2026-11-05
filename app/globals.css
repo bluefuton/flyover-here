@@ -741,6 +741,9 @@ select {
   padding: 5px 0 28px;
   display: flex;
 }
+.display + .data-footer {
+  padding-top: 24px;
+}
 .data-footer .data-note {
   flex: 1;
   max-width: 600px;
